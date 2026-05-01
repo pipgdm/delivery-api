@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -60,4 +61,34 @@ Website text:
         messages=[{"role": "user", "content": prompt}]
     )
 
-    return response.choices[0].message.content
+    return json.loads(response.choices[0].message.content)
+
+@app.post("/latest-signal")
+def latest_signal(req: UrlRequest):
+    text = scrape_site(req.url)
+
+    prompt = f"""
+From this website text, identify the company name.
+
+Then infer a likely recent business signal (e.g. expansion, hiring, new markets, scaling).
+
+Return JSON:
+{{
+  "company": "",
+  "signal": "",
+  "why_it_matters": "",
+  "outbound_angle": ""
+}}
+
+Website text:
+{text}
+"""
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        temperature=0,
+        response_format={"type": "json_object"},
+        messages=[{"role": "user", "content": prompt}]
+    )
+
+    return json.loads(response.choices[0].message.content)
